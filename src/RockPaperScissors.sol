@@ -116,6 +116,9 @@ contract RockPaperScissors {
         game.state = GameState.Active;
     }
 
+    /**
+        called by a player2 to play his/her hand without hash
+     */
     function playPlayer2(uint256 _gameId, Action _hand) external {
         Game storage game = games[_gameId];
 
@@ -160,4 +163,23 @@ contract RockPaperScissors {
         game.round += 1;
         game.state = GameState.InActive;
     }
+
+    function withdraw(uint256 _gameId, uint256 _amount) external {
+        require(_amount > 0, "Eror: cannot withdraw 0");
+        Game memory game = games[_gameId];
+
+        uint256 max = chips[msg.sender][_gameId];
+
+        if (_amount > max) {
+            _amount = max;
+        }
+
+        require(game.token.transfer(msg.sender, _amount));
+
+        chips[msg.sender][_gameId] -= _amount;
+    }
 }
+
+// TODO:
+// 1. Feature: if player1 takes a lot of time to call showdown then after a certain deadline player2 can call a method to win
+// all the bet amount in that round irrespective of who won
