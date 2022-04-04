@@ -42,6 +42,16 @@ contract RockPaperScissors {
     }
 
     event GameCreated(Game game);
+    event ChipsAdded(uint256 gameId, address account, uint256 amount);
+    event ChipsWithdrawn(uint256 gameId, address account, uint256 amount);
+    event Player1Hand(uint256 gameId, bytes32 hand);
+    event Player2Hand(uint256 gameId, Action hand);
+    event GameFinished(
+        uint256 gameId,
+        Action player1Hand,
+        Action player2Hand,
+        address winner
+    );
 
     uint256 public totalGames;
     // gameId => Game
@@ -99,6 +109,8 @@ contract RockPaperScissors {
         );
 
         chips[_for][_gameId] += _amount;
+
+        emit ChipsAdded(_gameId, _for, _amount);
     }
 
     /**
@@ -114,6 +126,8 @@ contract RockPaperScissors {
         chips[msg.sender][_gameId] -= game.betAmount;
         hands[_gameId][game.round].player1 = _hand; // saved for later proof when the hand is revealed
         game.state = GameState.Active;
+
+        emit Player1Hand(_gameId, _hand);
     }
 
     /**
@@ -128,6 +142,8 @@ contract RockPaperScissors {
         chips[msg.sender][_gameId] -= game.betAmount;
         hands[_gameId][game.round].player2 = _hand;
         game.state = GameState.Finished;
+
+        emit Player2Hand(_gameId, _hand);
     }
 
     /**
@@ -152,12 +168,21 @@ contract RockPaperScissors {
 
         // decide the winner
         uint256 winnerIndex = _judge[_hand][hands[_gameId][game.round].player2];
-
+        address winner;
         if (winnerIndex == 0) {
-            chips[game.player1][_gameId] += 2 * game.betAmount;
+            winner = game.player1;
         } else {
-            chips[game.player2][_gameId] += 2 * game.betAmount;
+            winner = game.player2;
         }
+
+        chips[winner][_gameId] += 2 * game.betAmount;
+
+        emit GameFinished(
+            _gameId,
+            _hand,
+            hands[_gameId][game.round].player2,
+            winner
+        );
 
         // re initialize the game
         game.round += 1;
@@ -165,7 +190,6 @@ contract RockPaperScissors {
     }
 
     function withdraw(uint256 _gameId, uint256 _amount) external {
-        require(_amount > 0, "Eror: cannot withdraw 0");
         Game memory game = games[_gameId];
 
         uint256 max = chips[msg.sender][_gameId];
@@ -174,9 +198,13 @@ contract RockPaperScissors {
             _amount = max;
         }
 
+        require(_amount > 0, "Eror: cannot withdraw 0");
+
         require(game.token.transfer(msg.sender, _amount));
 
         chips[msg.sender][_gameId] -= _amount;
+
+        emit ChipsWithdrawn(_gameId, msg.sender, _amount);
     }
 }
 
