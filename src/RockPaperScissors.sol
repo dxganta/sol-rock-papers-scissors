@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "./RockPaperScissorsData.sol";
 
 /**
     First a game will be created with the addresses of each player, bet amount and the token
@@ -13,46 +13,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
     Once verified, the contract will send the bet amount chips to whoever won that round
  */
 
-contract RockPaperScissors {
-    enum Action {
-        Rock,
-        Paper,
-        Scissors
-    }
-
-    enum GameState {
-        InActive, // once game is finished, it will go to inactive state
-        Active, // once player1 submits hash entry it will go to active state
-        // and then once player2 submits game will go to finished state, waiting for player1 to reveal hash and decide winner
-        Finished // players cannot bet if the game is in a finished state, you must wait till the game is in Inactive state again, which will happen after the bet amount is rewarded to the winner
-    }
-
-    struct Game {
-        uint256 round;
-        GameState state; // current state of the game
-        address player1;
-        address player2;
-        uint256 betAmount;
-        IERC20 token;
-    }
-
-    struct Hands {
-        bytes32 player1; // the hashed entry of player 1 (rocks, paper or scissors)
-        Action player2; // unhashed entry of player 2
-    }
-
-    event GameCreated(Game game);
-    event ChipsAdded(uint256 gameId, address account, uint256 amount);
-    event ChipsWithdrawn(uint256 gameId, address account, uint256 amount);
-    event Player1Hand(uint256 gameId, bytes32 hand);
-    event Player2Hand(uint256 gameId, Action hand);
-    event GameFinished(
-        uint256 gameId,
-        Action player1Hand,
-        Action player2Hand,
-        address winner
-    );
-
+contract RockPaperScissors is RockPaperScissorsData {
     uint256 public totalGames;
     // gameId => Game
     mapping(uint256 => Game) public games;
@@ -79,8 +40,9 @@ contract RockPaperScissors {
         address _player2,
         uint256 _betAmount,
         address _token
-    ) external {
-        games[totalGames] = Game({
+    ) external returns (uint256 gameId) {
+        gameId = totalGames;
+        games[gameId] = Game({
             round: 0,
             state: GameState.InActive,
             player1: _player1,
@@ -88,7 +50,7 @@ contract RockPaperScissors {
             betAmount: _betAmount,
             token: IERC20(_token)
         });
-        emit GameCreated(games[totalGames]);
+        emit GameCreated(gameId, games[gameId]);
 
         totalGames += 1;
     }
@@ -189,6 +151,9 @@ contract RockPaperScissors {
         game.state = GameState.InActive;
     }
 
+    /**
+        method used by players to convert chips back to tokens and withdraw
+     */
     function withdraw(uint256 _gameId, uint256 _amount) external {
         Game memory game = games[_gameId];
 
