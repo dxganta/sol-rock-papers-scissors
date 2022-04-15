@@ -27,6 +27,10 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
     RockPaperScissors rps;
     ERC20Mock token;
 
+    uint8 rock = 1;
+    uint8 scissors = 2;
+    uint8 paper = 3;
+
     address player1 = address(1);
     address player2 = address(2);
     address player3 = address(3);
@@ -93,6 +97,9 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
         assertEq(token.balanceOf(address(rps)), chipAmt);
     }
 
+    /**
+         _hand 1-Rock, 2-Scissors, 3-Paper
+     */
     function testPlays() public {
         uint256 betAmt = 10 * 1e18;
         uint256 gameId = rps.createGame(
@@ -105,7 +112,7 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
         uint256 chipAmt = betAmt * 100;
         // player 1 chooses rock
         uint256 secret = 69;
-        bytes32 rockHash = keccak256(abi.encodePacked(secret, Action.Rock));
+        bytes32 rockHash = keccak256(abi.encodePacked(secret, rock));
 
         _buyChips(player1, chipAmt, gameId);
 
@@ -115,22 +122,22 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
         cheats.expectRevert(bytes("Error: Wrong sender"));
         rps.playPlayer1(gameId, rockHash);
         cheats.expectRevert(bytes("Error: Not your turn"));
-        rps.playPlayer2(gameId, Action.Rock);
+        rps.playPlayer2(gameId, rock);
 
         cheats.startPrank(player1);
         rps.playPlayer1(gameId, rockHash);
         cheats.expectRevert(bytes("Error: Not your turn"));
         rps.playPlayer1(gameId, rockHash);
         cheats.expectRevert(bytes("Error: Wrong sender"));
-        rps.playPlayer2(gameId, Action.Rock);
+        rps.playPlayer2(gameId, rock);
         // players chip balance must be reduced by betAmt
         assertEq(rps.chips(player1, gameId), chipAmt - betAmt);
 
         cheats.startPrank(player2);
-        rps.playPlayer2(gameId, Action.Paper);
+        rps.playPlayer2(gameId, paper);
         assertEq(rps.chips(player2, gameId), chipAmt - betAmt);
         cheats.expectRevert(bytes("Error: Not your turn"));
-        rps.playPlayer2(gameId, Action.Paper);
+        rps.playPlayer2(gameId, paper);
         cheats.expectRevert(bytes("Error: Not your turn"));
         rps.playPlayer1(gameId, rockHash);
 
@@ -138,7 +145,7 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
         cheats.expectRevert(bytes("Error: Not your turn"));
         rps.playPlayer1(gameId, rockHash);
         cheats.expectRevert(bytes("Error: Not your turn"));
-        rps.playPlayer2(gameId, Action.Scissors);
+        rps.playPlayer2(gameId, scissors);
     }
 
     function testShowdown() public {
@@ -158,18 +165,18 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
 
         // player 1 chooses rock
         uint256 secret = 69;
-        bytes32 rockHash = keccak256(abi.encodePacked(secret, Action.Rock));
+        bytes32 rockHash = keccak256(abi.encodePacked(secret, rock));
         cheats.prank(player1);
         rps.playPlayer1(gameId, rockHash);
 
         // player 2 chooses Scissors
         cheats.prank(player2);
-        rps.playPlayer2(gameId, Action.Scissors);
+        rps.playPlayer2(gameId, scissors);
 
         uint256 initBal = rps.chips(player1, gameId);
         // player 1 must win
         cheats.startPrank(player1);
-        rps.showdown(gameId, secret, Action.Rock);
+        rps.showdown(gameId, secret, rock);
 
         // assert player 1 won
         assertEq(rps.chips(player1, gameId) - initBal, 2 * betAmt);

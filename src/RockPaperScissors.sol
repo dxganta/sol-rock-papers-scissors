@@ -23,18 +23,6 @@ contract RockPaperScissors is RockPaperScissorsData {
     // gameId => roundId => Hands
     mapping(uint256 => mapping(uint256 => Hands)) public hands;
 
-    // player1_hand => player2_hand => index of the winner (0 for player1 & 1 for player2)
-    mapping(Action => mapping(Action => uint256)) private _judge;
-
-    constructor() {
-        _judge[Action.Rock][Action.Paper] = 1;
-        _judge[Action.Rock][Action.Scissors] = 0;
-        _judge[Action.Paper][Action.Rock] = 0;
-        _judge[Action.Paper][Action.Scissors] = 1;
-        _judge[Action.Scissors][Action.Rock] = 1;
-        _judge[Action.Scissors][Action.Paper] = 0;
-    }
-
     function createGame(
         address _player1,
         address _player2,
@@ -94,8 +82,9 @@ contract RockPaperScissors is RockPaperScissorsData {
 
     /**
         called by a player2 to play his/her hand without hash
+        @param _hand 1-Rock, 2-Scissors, 3-Paper
      */
-    function playPlayer2(uint256 _gameId, Action _hand) external {
+    function playPlayer2(uint256 _gameId, uint8 _hand) external {
         Game storage game = games[_gameId];
 
         require(game.state == GameState.Active, "Error: Not your turn");
@@ -114,7 +103,7 @@ contract RockPaperScissors is RockPaperScissorsData {
     function showdown(
         uint256 _gameId,
         uint256 _secret,
-        Action _hand
+        uint8 _hand
     ) external {
         Game storage game = games[_gameId];
 
@@ -129,13 +118,11 @@ contract RockPaperScissors is RockPaperScissorsData {
         );
 
         // decide the winner
-        uint256 winnerIndex = _judge[_hand][hands[_gameId][game.round].player2];
-        address winner;
-        if (winnerIndex == 0) {
-            winner = game.player1;
-        } else {
-            winner = game.player2;
-        }
+        uint256 winnerIndex = _gameLogic(
+            _hand,
+            hands[_gameId][game.round].player2
+        );
+        address winner = winnerIndex == 0 ? game.player1 : game.player2;
 
         chips[winner][_gameId] += 2 * game.betAmount;
 
@@ -149,6 +136,16 @@ contract RockPaperScissors is RockPaperScissorsData {
         // re initialize the game
         game.round += 1;
         game.state = GameState.InActive;
+    }
+
+    function _gameLogic(uint8 hand1, uint8 hand2)
+        internal
+        pure
+        returns (uint8)
+    {
+        uint8 tmp = hand1 + 1 == 4 ? 1 : hand1 + 1;
+
+        return tmp == hand2 ? 0 : 1;
     }
 
     /**

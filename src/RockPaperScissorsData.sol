@@ -4,12 +4,6 @@ pragma solidity 0.8.10;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 abstract contract RockPaperScissorsData {
-    enum Action {
-        Rock,
-        Paper,
-        Scissors
-    }
-
     enum GameState {
         InActive, // once game is finished, it will go to inactive state
         Active, // once player1 submits hash entry it will go to active state
@@ -28,18 +22,18 @@ abstract contract RockPaperScissorsData {
 
     struct Hands {
         bytes32 player1; // the hashed entry of player 1 (rocks, paper or scissors)
-        Action player2; // unhashed entry of player 2
+        uint8 player2; // unhashed entry of player 2
     }
 
     event GameCreated(uint256 gameId, Game game);
     event ChipsAdded(uint256 gameId, address account, uint256 amount);
     event ChipsWithdrawn(uint256 gameId, address account, uint256 amount);
     event Player1Hand(uint256 gameId, bytes32 hand);
-    event Player2Hand(uint256 gameId, Action hand);
+    event Player2Hand(uint256 gameId, uint8 hand);
     event GameFinished(
         uint256 gameId,
-        Action player1Hand,
-        Action player2Hand,
+        uint8 player1Hand,
+        uint8 player2Hand,
         address winner
     );
 }
