@@ -148,6 +148,21 @@ contract RockPaperScissorsTest is DSTest, RockPaperScissorsData {
         rps.playPlayer2(gameId, scissors);
     }
 
+    function testGameLogic() public {
+        assertEq(rps.gameLogic(rock, player1, scissors, player2), player1);
+        assertEq(rps.gameLogic(rock, player1, paper, player2), player2);
+        assertEq(rps.gameLogic(rock, player1, rock, player2), address(0));
+        assertEq(rps.gameLogic(paper, player1, scissors, player2), player2);
+        assertEq(rps.gameLogic(paper, player1, rock, player2), player1);
+        assertEq(rps.gameLogic(paper, player1, paper, player2), address(0));
+        assertEq(rps.gameLogic(scissors, player1, rock, player2), player2);
+        assertEq(rps.gameLogic(scissors, player1, paper, player2), player1);
+        assertEq(
+            rps.gameLogic(scissors, player1, scissors, player2),
+            address(0)
+        );
+    }
+
     function testShowdown() public {
         uint256 betAmt = 10 * 1e18;
         uint256 gameId = rps.createGame(

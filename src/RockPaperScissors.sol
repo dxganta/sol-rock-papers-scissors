@@ -117,14 +117,18 @@ contract RockPaperScissors is RockPaperScissorsData {
             "Error: Cannot verify hash"
         );
 
-        // decide the winner
-        uint256 winnerIndex = _gameLogic(
-            _hand,
-            hands[_gameId][game.round].player2
-        );
-        address winner = winnerIndex == 0 ? game.player1 : game.player2;
+        address winner;
 
-        chips[winner][_gameId] += 2 * game.betAmount;
+        winner = gameLogic(
+            _hand,
+            game.player1,
+            hands[_gameId][game.round].player2,
+            game.player2
+        );
+
+        if (winner != address(0)) {
+            chips[winner][_gameId] += 2 * game.betAmount;
+        }
 
         emit GameFinished(
             _gameId,
@@ -138,14 +142,17 @@ contract RockPaperScissors is RockPaperScissorsData {
         game.state = GameState.InActive;
     }
 
-    function _gameLogic(uint8 hand1, uint8 hand2)
-        internal
-        pure
-        returns (uint8)
-    {
+    /// @notice returns 0 if hand1 won, 1 if hand2 won, reverts if nobody won
+    /// @dev kept this public for tests. you can make this method private before deploying for gas savings
+    function gameLogic(
+        uint8 hand1,
+        address player1,
+        uint8 hand2,
+        address player2
+    ) public pure returns (address) {
+        if (hand1 == hand2) return address(0);
         uint8 tmp = hand1 + 1 == 4 ? 1 : hand1 + 1;
-
-        return tmp == hand2 ? 0 : 1;
+        return tmp == hand2 ? player1 : player2;
     }
 
     /**
